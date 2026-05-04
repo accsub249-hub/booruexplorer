@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>나만의 단부루 태그 백과사전 (마스터 UI 완성본)</title>
+    <style>
+        :root { 
+            --main-color: #4a6ee0; 
+            --bg-color: #f4f7f6;
+            --sub-color: #829ceb;
+            --modal-bg: rgba(0, 0, 0, 0.5);
+            
+            /* 기본(블루) 테마 전용 편집 모드 색상 */
+            --edit-bg-color: #e8eaf6; /* 눈이 편안한 연푸른빛 파스텔 배경 */
+            --edit-color: #3f51b5; /* 강조 인디고 컬러 */
+            --edit-color-rgb: 63, 81, 181; /* 애니메이션을 위한 RGB 값 */
+            --edit-border-color: #9fa8da; /* 부드러운 테두리 색상 */
+        }
+        
+        /* 테마별 메인 색상 및 전용 편집 색상 */
+        body.theme-green { 
+            --main-color: #2e7d32; --sub-color: #81c784; 
+            --edit-bg-color: #f1f8e9; --edit-color: #388e3c; 
+            --edit-color-rgb: 56, 142, 60; --edit-border-color: #a5d6a7; 
+        }
+        body.theme-pink { 
+            --main-color: #d81b60; --sub-color: #f06292; 
+            --edit-bg-color: #fce4ec; --edit-color: #c2185b; 
+            --edit-color-rgb: 194, 24, 91; --edit-border-color: #f48fb1; 
+        }
+        body.theme-purple { 
+            --main-color: #6a1b9a; --sub-color: #ba68c8; 
+            --edit-bg-color: #f3e5f5; --edit-color: #7b1fa2; 
+            --edit-color-rgb: 123, 31, 162; --edit-border-color: #ce93d8; 
+        }
+
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg-color); margin: 0; padding: 20px; color: #333; transition: background 0.3s, color 0.3s; }
+        body.edit-mode { background: var(--edit-bg-color); }
+
+        /* 다크 모드 스타일 */
+        body.dark-mode { background: #121212; color: #eee; }
+        /* 다크모드 전용 각 테마별 편집 배경색 */
+        body.dark-mode.edit-mode { background: #1a1a2e; } 
+        body.dark-mode.theme-green.edit-mode { background: #1b281b; }
+        body.dark-mode.theme-pink.edit-mode { background: #2c1a24; }
+        body.dark-mode.theme-purple.edit-mode { background: #23162b; }
+
+        body.dark-mode #top-area { background: inherit; }
+        body.dark-mode #copy-bar, body.dark-mode #tag-basket, body.dark-mode .size-selector { background: #1e1e1e; border-color: #333; color: #eee; }
+        body.dark-mode .tag-card { background: #1e1e1e; border-color: #333; }
+        body.dark-mode .tag-card:hover { border-color: var(--main-color); }
+        body.dark-mode .tag-eng { color: #eee; }
+        body.dark-mode .main-btn { background: #1e1e1e; color: #aaa; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
+        body.dark-mode .main-btn.active { background: var(--main-color); color: white; }
+        body.dark-mode #sub-nav { background: #2a2a2a; }
+        body.dark-mode .sub-btn { color: #aaa; border-color: #555; }
+        body.dark-mode .sub-btn.active { background: var(--sub-color); color: white; border-color: var(--sub-color); }
+        body.dark-mode #tooltip { background: #1e1e1e; border-color: var(--main-color); color: #eee; }
+        body.dark-mode #tooltip .tt-eng { color: #eee; }
+        body.dark-mode .modal-content { background: #1e1e1e; color: #eee; }
+        body.dark-mode .form-group label { color: #ccc; }
+        body.dark-mode .form-group input, body.dark-mode .input-with-select select { background: #333; color: #eee; border-color: #555; }
+        body.dark-mode #export-list { border-color: #555; }
+        body.dark-mode .toolbar-group { background: rgba(255,255,255,0.05); border-color: #444; }
+        
+        /* 다크 모드 + 편집 모드 */
+        body.dark-mode.edit-mode .tag-card { border-color: var(--edit-color); }
+        body.dark-mode.edit-mode .tag-card:hover { border-color: var(--edit-color); }
+        body.dark-mode.edit-mode .main-btn.active { background: var(--edit-color); }
+        body.dark-mode.edit-mode .sub-btn.active { background: var(--edit-color); border-color: var(--edit-color); }
+
+        /* 상단 토글 버튼 (테마 및 다크모드) */
+        .toggles-container { position: absolute; top: 15px; right: 20px; display: flex; gap: 15px; z-index: 1001; align-items: center; }
+        .icon-btn { font-size: 26px; cursor: pointer; user-select: none; transition: 0.2s; background: none; border: none; padding: 0; outline: none; }
+        .icon-btn:hover { transform: scale(1.1); }
+
+        /* 테마 드롭다운 (호버 시 표시) */
+        .theme-dropdown-container { position: relative; display: inline-block; padding-bottom: 10px; margin-bottom: -10px; }
+        .theme-dropdown {
+            position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            background: white; border-radius: 20px; padding: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15); display: flex; flex-direction: column; gap: 10px;
+            opacity: 0; visibility: hidden; transition: 0.2s; z-index: 1002;
+        }
+        body.dark-mode .theme-dropdown { background: #1e1e1e; border: 1px solid #444; }
+        .theme-dropdown-container:hover .theme-dropdown {
+            opacity: 1; visibility: visible; transform: translateX(-50%) translateY(5px);
+        }
+        .theme-circle {
+            width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+            transition: 0.2s; border: 2px solid transparent; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .theme-circle:hover { transform: scale(1.2); border-color: #333; }
+        body.dark-mode .theme-circle:hover { border-color: #fff; }
+
+        /* 상단 바 */
+        #top-area { position: sticky; top: 0; z-index: 100; padding-bottom: 15px; background: inherit; }
+        #copy-bar {
+            background: white; padding: 15px; border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap;
+        }
+        
+        /* 스마트 태그 바구니 */
+        #tag-basket { 
+            flex-grow: 1; border: 1px solid #ddd; padding: 10px; border-radius: 8px; 
+            background: #fdfdfd; min-height: 24px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+        }
+        .basket-placeholder { color: #aaa; font-size: 15px; }
+        .basket-tag {
+            background: var(--tag-bg, #eef1f5); padding: 5px 10px; border-radius: 6px; font-size: 14px; font-weight: 500;
+            cursor: grab; border: 1px solid transparent; transition: opacity 0.2s; color: var(--tag-color, #333);
+        }
+        .basket-tag:active { cursor: grabbing; }
+        .basket-tag:hover { opacity: 0.8; outline: 1px solid #ff5e5e; }
+        .basket-tag:hover::after { content: " ✕"; font-size: 12px; color: #ff5e5e; font-weight: bold; }
+        .basket-drag-over { border-left: 4px solid var(--main-color) !important; padding-left: 14px; opacity: 0.7; }
+
+        /* 도구 모음 (그룹화) */
+        .toolbar { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; align-items: center; padding-right: 90px; }
+        .toolbar-group { display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,0.03); padding: 8px 12px; border-radius: 10px; border: 1px solid #eaeaea; transition: 0.3s; }
+        .toolbar-group-title { font-size: 13px; font-weight: bold; color: #888; margin-right: 5px; }
+        
+        .btn { padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; color: white; font-size: 14px; transition: 0.2s; margin: 0; }
+        .btn:hover { opacity: 0.8; transform: translateY(-2px); }
+        .btn-copy { background: var(--main-color); }
+        .btn-reset { background: #ff5e5e; }
+        .btn-add { background: #20c997; }
+        .btn-export { background: #607d8b; }
+        .btn-import { background: #795548; }
+        .btn-manage { background: #455a64; }
+        .btn-edit-toggle { background: #555; }
+        .edit-mode .btn-edit-toggle { background: var(--edit-color); animation: pulse 1.5s infinite; }
+
+        .size-selector {
+            padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd;
+            font-size: 14px; font-weight: bold; color: #555; background: white; cursor: pointer; outline: none; transition: 0.2s;
+        }
+        .size-selector:hover { border-color: var(--main-color); }
+
+        /* 테마별 편집 모드 애니메이션 컬러 연동 */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(var(--edit-color-rgb), 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(var(--edit-color-rgb), 0); }
+            100% { box-shadow: 0 0 0 0 rgba(var(--edit-color-rgb), 0); }
+        }
+
+        /* 대분류/소분류 버튼 */
+        .nav-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        .main-btn { 
+            position: relative; padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer;
+            background: #fff; color: #555; font-weight: bold; transition: 0.2s;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+        }
+        .main-btn.active { background: var(--main-color); color: white; }
+        .edit-mode .main-btn.active { background: var(--edit-color); }
+
+        #sub-nav { background: #eef1f5; padding: 10px; border-radius: 10px; display: none; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .edit-mode #sub-nav { background: rgba(255,255,255,0.4); }
+        body.dark-mode.edit-mode #sub-nav { background: rgba(0,0,0,0.2); }
+        
+        .sub-btn { position: relative; padding: 8px 16px; border-radius: 8px; border: 1px solid #ccc; cursor: pointer; background: transparent; color: #666; font-size: 14px; transition: 0.2s; }
+        .sub-btn.active { background: var(--sub-color); color: white; border-color: var(--sub-color); }
+        .edit-mode .sub-btn.active { background: var(--edit-color); border-color: var(--edit-color); }
+
+        /* 카테고리 삭제 버튼 (편집 모드 전용) */
+        .delete-cat {
+            display: none; position: absolute; top: -6px; right: -6px;
+            background: #ff5e5e; color: white; border-radius: 50%;
+            width: 18px; height: 18px; font-size: 12px; line-height: 16px; 
+            text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10;
+        }
+        .delete-cat:hover { transform: scale(1.1); background: #ff3b3b; }
+        .edit-mode .main-btn:not(.add-btn) .delete-cat, 
+        .edit-mode .sub-btn:not(.add-btn) .delete-cat { display: block; }
+
+        /* 편집 모드 전용 추가 인라인 버튼 스타일 */
+        .add-btn { display: none; border: 2px dashed #ccc !important; background: transparent !important; color: #888 !important; box-shadow: none !important; }
+        .edit-mode .add-btn { display: inline-block; }
+        .dark-mode .add-btn { border-color: #555 !important; color: #777 !important; }
+        .add-btn:hover { border-color: var(--edit-color) !important; color: var(--edit-color) !important; background: rgba(var(--edit-color-rgb), 0.1) !important; }
+
+        .add-card { 
+            display: none; border: 2px dashed #ccc !important; background: transparent !important; box-shadow: none !important; 
+            align-items: center; justify-content: center; flex-direction: column; color: #888; cursor: pointer;
+        }
+        .edit-mode .add-card { display: flex; }
+        .dark-mode .add-card { border-color: #555 !important; color: #777 !important; }
+        .add-card:hover { border-color: var(--edit-color) !important; color: var(--edit-color) !important; background: rgba(var(--edit-color-rgb), 0.1) !important; }
+        .add-card::after { display: none !important; }
+
+        /* 이미지 블러 관련 스타일 */
+        .blur-toggle {
+            display: none; position: absolute; top: 5px; left: 5px;
+            background: rgba(0,0,0,0.6); color: white; border-radius: 6px;
+            width: 26px; height: 26px; font-size: 14px; 
+            text-align: center; line-height: 26px; cursor: pointer; z-index: 10;
+            transition: 0.2s;
+        }
+        .blur-toggle:hover { background: rgba(0,0,0,0.8); transform: scale(1.1); }
+        .edit-mode .tag-card:not(.add-card) .blur-toggle { display: block; }
+        
+        /* 블러 효과 (이미지 테두리 깨짐 방지를 위해 scale 적용) */
+        .blur-img { filter: blur(12px) !important; transform: scale(1.1); }
+
+        /* 드래그 앤 드롭 효과 (편집 모드) */
+        .edit-mode .main-btn:not(.add-btn), .edit-mode .sub-btn:not(.add-btn), .edit-mode .tag-card:not(.add-card) { cursor: grab; }
+        .edit-mode .main-btn:active, .edit-mode .sub-btn:active, .edit-mode .tag-card:active { cursor: grabbing; }
+        .drag-over { border: 2px dashed var(--edit-color) !important; opacity: 0.5; transform: scale(1.02); }
+
+        /* 태그 카드 그리드 */
+        .tag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+        .tag-card { background: white; border-radius: 10px; overflow: hidden; cursor: pointer; transition: 0.2s; border: 2px solid transparent; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .tag-card:hover { transform: translateY(-3px); border-color: var(--main-color); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        
+        /* 이미지 영역을 감싸는 컨테이너 생성 (블러 scale 삐져나옴 방지) */
+        .img-container { width: 100%; aspect-ratio: 1 / 1; overflow: hidden; background: #f9f9f9; }
+        .tag-card img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; transition: filter 0.3s, transform 0.3s; }
+        
+        .tag-info { padding: 12px; text-align: center; pointer-events: none; }
+        .tag-eng { font-weight: bold; display: block; font-size: 14px; color: #333; word-break: break-all; transition: 0.2s; }
+        .tag-kor { font-size: 12px; color: #999; margin-top: 3px; transition: 0.2s; }
+        
+        .size-small .tag-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+        .size-small .tag-info { padding: 8px; }
+        .size-small .tag-eng { font-size: 12px; }
+        .size-small .tag-kor { font-size: 11px; }
+
+        .size-large .tag-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .size-large .tag-info { padding: 16px; }
+        .size-large .tag-eng { font-size: 18px; }
+        .size-large .tag-kor { font-size: 15px; }
+
+        .edit-mode .tag-card:not(.add-card) { border-color: var(--edit-border-color); }
+        .edit-mode .tag-card:not(.add-card):hover { border-color: var(--edit-color); }
+        .edit-mode .tag-card:not(.add-card)::after { content: "✏️ 편집/이동"; position: absolute; top: 5px; right: 5px; background: var(--edit-color); color: white; font-size: 11px; padding: 3px 6px; border-radius: 6px; font-weight: bold; pointer-events: none; }
+
+        /* 툴팁 */
+        #tooltip { position: fixed; background: white; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); padding: 10px; display: none; z-index: 3000; pointer-events: none; width: 160px; text-align: center; border: 2px solid var(--main-color); overflow: hidden; }
+        #tooltip .tt-img-wrap { width: 100%; height: 160px; overflow: hidden; border-radius: 6px; margin-bottom: 5px; background: #eee; }
+        #tooltip img { width: 100%; height: 100%; object-fit: cover; }
+        #tooltip .tt-eng { font-weight: bold; font-size: 13px; display: block; color: #222; }
+        #tooltip .tt-kor { font-size: 12px; color: #666; margin-top: 2px; }
+
+        /* 모달 스타일 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); z-index: 2000; display: none; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 15px; width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
+        .modal-content h3 { margin-top: 0; color: var(--main-color); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
+        
+        .input-with-select { display: flex; gap: 8px; }
+        .input-with-select input { flex-grow: 1; width: 100%; }
+        .input-with-select select { width: 90px; cursor: pointer; background: white; color: #333; font-size: 13px; }
+
+        .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+        .modal-btns button { padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-save { background: var(--main-color); color: white; }
+        .btn-delete { background: #ff5e5e; color: white; display: none; }
+        .btn-cancel { background: #ddd; color: #333; }
+        #img-preview { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-top: 10px; display: none; border: 1px solid #ddd; }
+        .export-checkbox { transform: scale(1.2); margin-right: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="toggles-container">
+    <div class="theme-dropdown-container">
+        <button class="icon-btn" title="테마 색상 변경">🎨</button>
+        <div class="theme-dropdown">
+            <div class="theme-circle" style="background: #4a6ee0;" onclick="setTheme('default')" title="기본 (블루)"></div>
+            <div class="theme-circle" style="background: #2e7d32;" onclick="setTheme('theme-green')" title="네이처 그린"></div>
+            <div class="theme-circle" style="background: #d81b60;" onclick="setTheme('theme-pink')" title="체리블라썸 핑크"></div>
+            <div class="theme-circle" style="background: #6a1b9a;" onclick="setTheme('theme-purple')" title="로열 퍼플"></div>
+        </div>
+    </div>
+    <button id="theme-toggle" class="icon-btn" onclick="toggleTheme()" title="라이트/다크 모드 변경">🌙</button>
+</div>
+
+<div id="tooltip">
+    <div class="tt-img-wrap"><img id="tt-img" src=""></div>
+    <span id="tt-eng" class="tt-eng"></span>
+    <span id="tt-kor" class="tt-kor"></span>
+</div>
+
+<div id="top-area">
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <span class="toolbar-group-title">🛠️ 관리</span>
+            <button class="btn btn-add" onclick="openModal()">+ 태그 추가</button>
+            <button class="btn btn-manage" onclick="openCategoryManager()">⚙️ 카테고리 관리</button>
+            <button class="btn btn-edit-toggle" id="edit-toggle-btn" onclick="toggleEditMode()">✏️ 편집 모드: OFF</button>
+        </div>
+        
+        <div class="toolbar-group">
+            <span class="toolbar-group-title">💾 데이터</span>
+            <button class="btn btn-export" onclick="openExportModal()">내보내기</button>
+            <button class="btn btn-import" onclick="document.getElementById('import-file').click()">불러오기</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+        </div>
+
+        <div class="toolbar-group">
+            <span class="toolbar-group-title">👁️ 보기</span>
+            <select id="size-selector" class="size-selector" onchange="changeImageSize()">
+                <option value="small">🖼️ 작게</option>
+                <option value="medium">🖼️ 보통</option>
+                <option value="large">🖼️ 크게</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="copy-bar">
+        <div id="tag-basket">
+            <span class="basket-placeholder">태그를 클릭하면 여기에 쌓입니다...</span>
+        </div>
+        <button class="btn btn-copy" onclick="copyTags()">복사</button>
+        <button class="btn btn-reset" onclick="resetTags()">리셋</button>
+    </div>
+
+    <div class="nav-row" id="main-nav"></div>
+    <div id="sub-nav" class="nav-row"></div>
+</div>
+
+<div id="content" class="tag-grid"></div>
+
+<!-- 카테고리 관리(이름 변경) 모달창 -->
+<div id="category-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>⚙️ 카테고리 이름 변경</h3>
+        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">이미 등록된 카테고리의 이름을 안전하게 변경합니다.</p>
+        
+        <div class="form-group">
+            <label>변경할 대상 유형</label>
+            <select id="cat-manage-type" onchange="updateCatManageList()">
+                <option value="main">대분류</option>
+                <option value="sub">소분류</option>
+            </select>
+        </div>
+        
+        <div class="form-group" id="cat-manage-main-wrapper" style="display:none;">
+            <label>소속 대분류 선택 (소분류 변경 시)</label>
+            <select id="cat-manage-parent" onchange="updateCatManageList()"></select>
+        </div>
+        
+        <div class="form-group">
+            <label>기존 카테고리 이름</label>
+            <select id="cat-manage-old"></select>
+        </div>
+        
+        <div class="form-group">
+            <label>새로운 이름</label>
+            <input type="text" id="cat-manage-new" placeholder="새 이름을 입력하세요">
+        </div>
+        
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="closeCategoryManager()">취소</button>
+            <button class="btn-save" onclick="executeCategoryRename()">변경하기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 태그 추가/편집 모달창 -->
+<div id="modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+        <h3 id="modal-title">새 태그 만들기</h3>
+        <div class="form-group">
+            <label>이미지 파일 (선택 시 자동 압축 교체)</label>
+            <input type="file" id="new-img" accept="image/*" onchange="previewImage(event)">
+            <img id="img-preview" src="" alt="미리보기">
+        </div>
+        <div class="form-group">
+            <label>영어 태그 (필수)</label>
+            <input type="text" id="new-eng" placeholder="예: cat ears">
+        </div>
+        <div class="form-group">
+            <label>한글 뜻</label>
+            <input type="text" id="new-kor" placeholder="예: 고양이 귀">
+        </div>
+        <div class="form-group">
+            <label>대분류 (수정하면 카테고리 이동됨)</label>
+            <div class="input-with-select">
+                <input type="text" id="new-main" placeholder="예: 외형">
+                <select id="main-select" onchange="document.getElementById('new-main').value = this.value">
+                    <option value="" disabled selected>선택 ▼</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>소분류</label>
+            <div class="input-with-select">
+                <input type="text" id="new-sub" placeholder="예: 동물귀">
+                <select id="sub-select" onchange="document.getElementById('new-sub').value = this.value">
+                    <option value="" disabled selected>선택 ▼</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-btns">
+            <button class="btn-delete" id="delete-btn" onclick="deleteTag()">삭제</button>
+            <button class="btn-cancel" onclick="closeModal()">취소</button>
+            <button class="btn-save" onclick="saveTag()">저장하기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 내보내기 모달창 -->
+<div id="export-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>내보낼 카테고리 선택</h3>
+        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">저장하고 싶은 대분류만 선택할 수 있습니다.</p>
+        <div id="export-list" style="max-height: 200px; overflow-y: auto; text-align: left; margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 6px;"></div>
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="closeExportModal()">취소</button>
+            <button class="btn-save" onclick="executeExport()">내보내기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 불러오기 모달창 -->
+<div id="import-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>데이터 불러오기 옵션</h3>
+        <p style="font-size: 13px; color: #666; margin-bottom: 20px;">불러온 데이터를 기존 사전에 어떻게 적용할까요?</p>
+        <div class="modal-btns" style="justify-content: center; flex-direction: column; gap: 10px;">
+            <button class="btn-save" onclick="executeImport('overwrite')" style="width: 100%;">덮어쓰기 (기존 데이터 모두 삭제)</button>
+            <button class="btn-add" onclick="executeImport('append')" style="width: 100%;">추가하기 (기존 데이터 유지)</button>
+            <button class="btn-cancel" onclick="closeImportModal()" style="width: 100%; background: #ddd; color: #333;">취소</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const defaultTagData = [
+        { id: "1", main: "헤어", sub: "길이", eng: "short hair", kor: "짧은 머리", img: "https://via.placeholder.com/600?text=Short", isBlurred: false },
+        { id: "2", main: "헤어", sub: "앞머리", eng: "blunt bangs", kor: "일자 앞머리", img: "https://via.placeholder.com/600?text=Blunt", isBlurred: false },
+        { id: "3", main: "얼굴/눈", sub: "눈동자", eng: "heart-shaped pupils", kor: "하트 눈", img: "https://via.placeholder.com/600?text=Heart", isBlurred: false },
+        { id: "4", main: "의상/액세서리", sub: "상의", eng: "serafuku", kor: "세일러복", img: "https://via.placeholder.com/600?text=Serafuku", isBlurred: false }
+    ];
+
+    let allTags = [];
+    let currentMain = "";
+    let currentSub = "";
+    let compressedImageBase64 = ""; 
+    let editingTagId = null; 
+    let isEditMode = false; 
+    let tempImportedTags = []; 
+
+    let draggedItem = null;
+    let dragType = null;
+    let draggedBasketItem = null;
+    let selectedTags = [];
+    
+    // 테마 설정
+    const themes = ['default', 'theme-green', 'theme-pink', 'theme-purple'];
+
+    const mainNav = document.getElementById('main-nav');
+    const subNav = document.getElementById('sub-nav');
+    const contentDiv = document.getElementById('content');
+    const tagBasket = document.getElementById('tag-basket');
+    const tooltip = document.getElementById('tooltip');
+
+    function init() {
+        const savedTheme = localStorage.getItem('myTheme');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('theme-toggle').innerText = '☀️';
+        }
+
+        initThemes();
+
+        let savedData = localStorage.getItem('myCompleteTags');
+        if (!savedData) {
+            allTags = defaultTagData;
+            saveToLocalStorage();
+        } else {
+            allTags = JSON.parse(savedData);
+        }
+
+        const savedSize = localStorage.getItem('myTagImageSize') || 'medium';
+        document.getElementById('size-selector').value = savedSize;
+        applyImageSize(savedSize);
+
+        renderMainNav();
+        renderBasket();
+    }
+
+    function initThemes() {
+        const savedColorTheme = localStorage.getItem('myColorTheme');
+        if (savedColorTheme && themes.includes(savedColorTheme)) {
+            if (savedColorTheme !== 'default') {
+                document.body.classList.add(savedColorTheme);
+            }
+        }
+    }
+
+    function setTheme(themeName) {
+        // 기존 테마 클래스 제거
+        themes.forEach(t => { if(t !== 'default') document.body.classList.remove(t); });
+        
+        // 새 테마 클래스 적용 (기본 제외)
+        if (themeName !== 'default') {
+            document.body.classList.add(themeName);
+        }
+        localStorage.setItem('myColorTheme', themeName);
+    }
+
+    function toggleTheme() {
+        const isDark = document.body.classList.toggle('dark-mode');
+        localStorage.setItem('myTheme', isDark ? 'dark' : 'light');
+        document.getElementById('theme-toggle').innerText = isDark ? '☀️' : '🌙';
+        renderBasket(); 
+    }
+
+    function changeImageSize() {
+        const size = document.getElementById('size-selector').value;
+        localStorage.setItem('myTagImageSize', size);
+        applyImageSize(size);
+    }
+    function applyImageSize(size) {
+        document.body.classList.remove('size-small', 'size-medium', 'size-large');
+        document.body.classList.add('size-' + size);
+    }
+
+    function renderBasket() {
+        tagBasket.innerHTML = "";
+        if (selectedTags.length === 0) {
+            tagBasket.innerHTML = '<span class="basket-placeholder">태그를 클릭하면 여기에 쌓입니다...</span>';
+            return;
+        }
+        
+        const isDark = document.body.classList.contains('dark-mode');
+
+        const catCounts = {};
+        selectedTags.forEach(tagEng => {
+            const tagData = allTags.find(t => t.eng === tagEng && !t.isDummy);
+            if(tagData) {
+                catCounts[tagData.main] = (catCounts[tagData.main] || 0) + 1;
+            }
+        });
+
+        const activeCats = Object.keys(catCounts).filter(cat => catCounts[cat] >= 2);
+        const allMains = [...new Set(allTags.map(t => t.main))];
+        
+        activeCats.sort((a, b) => allMains.indexOf(a) - allMains.indexOf(b));
+        
+        const divisor = Math.max(7, activeCats.length);
+        const catColorMap = {};
+        activeCats.forEach((cat, idx) => {
+            catColorMap[cat] = idx * (360 / divisor);
+        });
+
+        selectedTags.forEach((tagEng, index, array) => {
+            const tagData = allTags.find(t => t.eng === tagEng && !t.isDummy);
+            const span = document.createElement('span');
+            span.className = 'basket-tag';
+            span.innerText = tagEng + (index < array.length - 1 ? "," : "");
+            
+            if (tagData) {
+                if (catCounts[tagData.main] >= 2) {
+                    const h = catColorMap[tagData.main];
+                    const bgColor = isDark ? `hsl(${h}, 50%, 30%)` : `hsl(${h}, 80%, 85%)`;
+                    span.style.setProperty('--tag-bg', bgColor);
+                    span.style.setProperty('--tag-color', isDark ? '#fff' : '#222');
+                } else {
+                    span.style.setProperty('--tag-bg', isDark ? '#333' : '#eef1f5');
+                    span.style.setProperty('--tag-color', isDark ? '#ddd' : '#333');
+                }
+                
+                span.onmouseenter = (e) => showTooltip(e, tagData);
+                span.onmouseleave = hideTooltip;
+            }
+
+            span.onclick = () => {
+                selectedTags = selectedTags.filter(t => t !== tagEng);
+                hideTooltip();
+                renderBasket();
+            };
+
+            span.draggable = true;
+            span.ondragstart = (e) => {
+                draggedBasketItem = tagEng;
+                e.dataTransfer.effectAllowed = 'move';
+                span.style.opacity = '0.5';
+            };
+            span.ondragend = () => { span.style.opacity = '1'; draggedBasketItem = null; };
+            span.ondragover = (e) => {
+                if(!draggedBasketItem || draggedBasketItem === tagEng) return;
+                e.preventDefault(); 
+                span.classList.add('basket-drag-over');
+            };
+            span.ondragleave = () => { span.classList.remove('basket-drag-over'); };
+            span.ondrop = (e) => {
+                e.preventDefault(); 
+                span.classList.remove('basket-drag-over');
+                if(!draggedBasketItem || draggedBasketItem === tagEng) return;
+                
+                const fromIdx = selectedTags.indexOf(draggedBasketItem);
+                const toIdx = selectedTags.indexOf(tagEng);
+                selectedTags.splice(fromIdx, 1);
+                selectedTags.splice(toIdx, 0, draggedBasketItem);
+                renderBasket();
+            };
+            
+            tagBasket.appendChild(span);
+        });
+    }
+
+    function showTooltip(e, tagData) {
+        const ttImg = document.getElementById('tt-img');
+        ttImg.src = tagData.img;
+        
+        if (tagData.isBlurred) { ttImg.classList.add('blur-img'); } 
+        else { ttImg.classList.remove('blur-img'); }
+
+        document.getElementById('tt-eng').innerText = tagData.eng;
+        document.getElementById('tt-kor').innerText = tagData.kor;
+        tooltip.style.display = 'block';
+        
+        let x = e.clientX + 15;
+        let y = e.clientY + 15;
+        if (x + 180 > window.innerWidth) x = e.clientX - 170;
+        if (y + 180 > window.innerHeight) y = e.clientY - 170;
+        
+        tooltip.style.left = x + 'px';
+        tooltip.style.top = y + 'px';
+    }
+    function hideTooltip() { tooltip.style.display = 'none'; }
+
+    // === 카테고리 관리 모달 (이름 변경) 로직 ===
+    function openCategoryManager() {
+        document.getElementById('category-modal').style.display = 'flex';
+        document.getElementById('cat-manage-type').value = 'main';
+        document.getElementById('cat-manage-new').value = '';
+        updateCatManageList();
+    }
+    function closeCategoryManager() {
+        document.getElementById('category-modal').style.display = 'none';
+    }
+    function updateCatManageList() {
+        const type = document.getElementById('cat-manage-type').value;
+        const oldSelect = document.getElementById('cat-manage-old');
+        const parentWrapper = document.getElementById('cat-manage-main-wrapper');
+        const parentSelect = document.getElementById('cat-manage-parent');
+        
+        oldSelect.innerHTML = '';
+        
+        if (type === 'main') {
+            parentWrapper.style.display = 'none';
+            const mains = [...new Set(allTags.map(t => t.main))];
+            mains.forEach(m => { oldSelect.innerHTML += `<option value="${m}">${m}</option>`; });
+        } else {
+            parentWrapper.style.display = 'block';
+            const mains = [...new Set(allTags.map(t => t.main))];
+            if (parentSelect.innerHTML === '' || parentSelect.options.length !== mains.length) {
+                parentSelect.innerHTML = '';
+                mains.forEach(m => { parentSelect.innerHTML += `<option value="${m}">${m}</option>`; });
+            }
+            const selectedMain = parentSelect.value;
+            if (selectedMain) {
+                const subs = [...new Set(allTags.filter(t => t.main === selectedMain).map(t => t.sub))];
+                subs.forEach(s => { oldSelect.innerHTML += `<option value="${s}">${s}</option>`; });
+            }
+        }
+    }
+    function executeCategoryRename() {
+        const type = document.getElementById('cat-manage-type').value;
+        const oldName = document.getElementById('cat-manage-old').value;
+        const newName = document.getElementById('cat-manage-new').value.trim();
+        
+        if (!oldName) return alert("변경할 카테고리를 선택하세요.");
+        if (!newName) return alert("새로운 이름을 입력하세요.");
+        if (oldName === newName) return alert("기존 이름과 동일합니다.");
+
+        if (type === 'main') {
+            if (allTags.some(t => t.main === newName)) return alert("이미 존재하는 대분류 이름입니다.");
+            allTags.forEach(t => { if(t.main === oldName) t.main = newName; });
+            if(currentMain === oldName) currentMain = newName;
+        } else {
+            const selectedMain = document.getElementById('cat-manage-parent').value;
+            if (allTags.some(t => t.main === selectedMain && t.sub === newName)) return alert("해당 대분류 안에 이미 존재하는 소분류 이름입니다.");
+            allTags.forEach(t => { if(t.main === selectedMain && t.sub === oldName) t.sub = newName; });
+            if(currentMain === selectedMain && currentSub === oldName) currentSub = newName;
+        }
+        
+        saveToLocalStorage();
+        renderMainNav();
+        renderBasket();
+        closeCategoryManager();
+        alert("카테고리 이름이 성공적으로 변경되었습니다!");
+    }
+
+    // === 인라인 카테고리 추가 로직 ===
+    function addMainCategory() {
+        const newMain = prompt("추가할 대분류 카테고리 이름을 입력하세요:");
+        if (newMain && newMain.trim() !== "") {
+            const name = newMain.trim();
+            if (!allTags.some(t => t.main === name)) {
+                allTags.push({ id: "dummy_main_" + Date.now(), main: name, sub: "기타", eng: "", kor: "", img: "", isDummy: true });
+                currentMain = name; 
+                saveToLocalStorage(); renderMainNav();
+            } else { alert("이미 존재하는 카테고리입니다."); }
+        }
+    }
+
+    function addSubCategory() {
+        const newSub = prompt(`[${currentMain}]에 추가할 소분류 카테고리 이름을 입력하세요:`);
+        if (newSub && newSub.trim() !== "") {
+            const name = newSub.trim();
+            if (!allTags.some(t => t.main === currentMain && t.sub === name)) {
+                allTags.push({ id: "dummy_sub_" + Date.now(), main: currentMain, sub: name, eng: "", kor: "", img: "", isDummy: true });
+                currentSub = name; 
+                saveToLocalStorage();
+                const activeMain = document.querySelector('.main-btn.active');
+                if(activeMain) selectMain(currentMain, activeMain);
+            } else { alert("이미 존재하는 소분류입니다."); }
+        }
+    }
+
+    function reorderCategories(type, fromName, toName) {
+        let categories = [];
+        if (type === 'main') categories = [...new Set(allTags.map(t => t.main))];
+        else if (type === 'sub') categories = [...new Set(allTags.filter(t => t.main === currentMain).map(t => t.sub))];
+
+        const fromIdx = categories.indexOf(fromName);
+        const toIdx = categories.indexOf(toName);
+        categories.splice(fromIdx, 1);
+        categories.splice(toIdx, 0, fromName);
+
+        let newAllTags = [];
+        const mainCategories = [...new Set(allTags.map(t => t.main))];
+        
+        if (type === 'main') {
+            categories.forEach(mainCat => { newAllTags = newAllTags.concat(allTags.filter(t => t.main === mainCat)); });
+        } else if (type === 'sub') {
+            mainCategories.forEach(mainCat => {
+                if(mainCat === currentMain) {
+                    categories.forEach(subCat => { newAllTags = newAllTags.concat(allTags.filter(t => t.main === mainCat && t.sub === subCat)); });
+                } else { newAllTags = newAllTags.concat(allTags.filter(t => t.main === mainCat)); }
+            });
+        }
+        allTags = newAllTags; saveToLocalStorage();
+        if (type === 'main') renderMainNav();
+        else { const activeBtn = Array.from(mainNav.children).find(b => b.dataset.name === currentMain); if (activeBtn) selectMain(currentMain, activeBtn); }
+    }
+
+    function reorderTags(fromId, toId) {
+        const fromIdx = allTags.findIndex(t => t.id === fromId);
+        const toIdx = allTags.findIndex(t => t.id === toId);
+        const [movedTag] = allTags.splice(fromIdx, 1);
+        allTags.splice(toIdx, 0, movedTag);
+        saveToLocalStorage();
+        
+        const activeSubBtn = document.querySelector('.sub-btn.active');
+        if(activeSubBtn) selectSub(activeSubBtn.dataset.name, activeSubBtn);
+    }
+
+    // === 메뉴 렌더링 ===
+    function renderMainNav() {
+        mainNav.innerHTML = "";
+        const mains = [...new Set(allTags.map(t => t.main))];
+        mains.forEach(main => {
+            const btn = document.createElement('button');
+            btn.className = 'main-btn';
+            btn.dataset.name = main; 
+            btn.innerHTML = `<span style="pointer-events:none;">${main}</span>`;
+            btn.onclick = () => selectMain(main, btn);
+            
+            const delBtn = document.createElement('span');
+            delBtn.className = 'delete-cat';
+            delBtn.innerHTML = '×';
+            delBtn.onclick = (e) => {
+                e.stopPropagation(); 
+                if(confirm(`'${main}' 대분류 카테고리를 정말 삭제하시겠습니까?\n내부에 있는 모든 소분류와 태그가 함께 삭제됩니다.`)) {
+                    allTags = allTags.filter(t => t.main !== main);
+                    if(currentMain === main) currentMain = "";
+                    saveToLocalStorage(); renderMainNav(); renderBasket();
+                }
+            };
+            btn.appendChild(delBtn);
+            
+            btn.draggable = isEditMode;
+            btn.ondragstart = (e) => { if(!isEditMode) return; draggedItem = main; dragType = 'main'; e.dataTransfer.effectAllowed = 'move'; btn.style.opacity = '0.5'; };
+            btn.ondragend = () => { btn.style.opacity = '1'; draggedItem = null; dragType = null; };
+            btn.ondragover = (e) => { if(!isEditMode) return; if(dragType === 'main' || dragType === 'tag') { e.preventDefault(); btn.classList.add('drag-over'); }};
+            btn.ondragleave = () => { btn.classList.remove('drag-over'); };
+            
+            btn.ondrop = (e) => { 
+                e.preventDefault(); btn.classList.remove('drag-over'); 
+                if(!isEditMode) return; 
+                if(dragType === 'main' && draggedItem !== main) {
+                    reorderCategories('main', draggedItem, main); 
+                } else if (dragType === 'tag') {
+                    const tag = allTags.find(t => t.id === draggedItem);
+                    if(tag && tag.main !== main) {
+                        tag.main = main;
+                        const targetSubs = [...new Set(allTags.filter(t => t.main === main).map(t => t.sub))];
+                        tag.sub = targetSubs.length > 0 ? targetSubs[0] : '기타'; 
+                        saveToLocalStorage(); renderMainNav(); renderBasket();
+                    }
+                }
+            };
+            mainNav.appendChild(btn);
+        });
+
+        const addMainBtn = document.createElement('button');
+        addMainBtn.className = 'main-btn add-btn';
+        addMainBtn.innerText = '+ 대분류 추가';
+        addMainBtn.onclick = addMainCategory;
+        mainNav.appendChild(addMainBtn);
+
+        updateDatalists(mains);
+        
+        if (mains.includes(currentMain)) { 
+            const activeBtn = Array.from(mainNav.children).find(b => b.dataset.name === currentMain); 
+            if(activeBtn) activeBtn.click(); 
+        } 
+        else if (mains.length > 0) { mainNav.firstChild.click(); } 
+        else { subNav.style.display = 'none'; contentDiv.innerHTML = ""; }
+    }
+
+    function selectMain(mainCat, btn) {
+        currentMain = mainCat;
+        document.querySelectorAll('.main-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const subs = [...new Set(allTags.filter(t => t.main === mainCat).map(t => t.sub))];
+        subNav.style.display = "flex"; subNav.innerHTML = "";
+        subs.forEach(sub => {
+            const subBtn = document.createElement('button');
+            subBtn.className = 'sub-btn';
+            subBtn.dataset.name = sub; 
+            subBtn.innerHTML = `<span style="pointer-events:none;">${sub}</span>`;
+            subBtn.onclick = () => selectSub(sub, subBtn);
+            
+            const delBtn = document.createElement('span');
+            delBtn.className = 'delete-cat';
+            delBtn.innerHTML = '×';
+            delBtn.onclick = (e) => {
+                e.stopPropagation(); 
+                if(confirm(`'${sub}' 소분류 카테고리를 정말 삭제하시겠습니까?\n내부에 있는 모든 태그가 함께 삭제됩니다.`)) {
+                    allTags = allTags.filter(t => !(t.main === currentMain && t.sub === sub));
+                    if(currentSub === sub) currentSub = "";
+                    saveToLocalStorage(); 
+                    const activeMain = document.querySelector('.main-btn.active');
+                    if(activeMain) selectMain(currentMain, activeMain);
+                    renderBasket();
+                }
+            };
+            subBtn.appendChild(delBtn);
+
+            subBtn.draggable = isEditMode;
+            subBtn.ondragstart = (e) => { if(!isEditMode) return; draggedItem = sub; dragType = 'sub'; e.dataTransfer.effectAllowed = 'move'; subBtn.style.opacity = '0.5'; };
+            subBtn.ondragend = () => { subBtn.style.opacity = '1'; draggedItem = null; dragType = null; };
+            subBtn.ondragover = (e) => { if(!isEditMode) return; if(dragType === 'sub' || dragType === 'tag') { e.preventDefault(); subBtn.classList.add('drag-over'); }};
+            subBtn.ondragleave = () => { subBtn.classList.remove('drag-over'); };
+            
+            subBtn.ondrop = (e) => { 
+                e.preventDefault(); subBtn.classList.remove('drag-over'); 
+                if(!isEditMode) return; 
+                if(dragType === 'sub' && draggedItem !== sub) {
+                    reorderCategories('sub', draggedItem, sub); 
+                } else if (dragType === 'tag') {
+                    const tag = allTags.find(t => t.id === draggedItem);
+                    if(tag && (tag.main !== currentMain || tag.sub !== sub)) {
+                        tag.main = currentMain;
+                        tag.sub = sub;
+                        saveToLocalStorage();
+                        const activeMain = document.querySelector('.main-btn.active');
+                        if(activeMain) selectMain(currentMain, activeMain);
+                        renderBasket();
+                    }
+                }
+            };
+            subNav.appendChild(subBtn);
+        });
+
+        const addSubBtn = document.createElement('button');
+        addSubBtn.className = 'sub-btn add-btn';
+        addSubBtn.innerText = '+ 소분류 추가';
+        addSubBtn.onclick = addSubCategory;
+        subNav.appendChild(addSubBtn);
+
+        const regularSubs = Array.from(subNav.children).filter(b => b.dataset.name);
+        
+        if (subs.includes(currentSub)) {
+            const activeSubBtn = Array.from(subNav.children).find(b => b.dataset.name === currentSub);
+            if(activeSubBtn) activeSubBtn.click();
+        } else if (regularSubs.length > 0) {
+            regularSubs[0].click();
+        } else {
+            currentSub = ""; contentDiv.innerHTML = ""; appendAddCard();
+        }
+    }
+
+    function selectSub(subCat, btn) {
+        currentSub = subCat;
+        document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+
+        contentDiv.innerHTML = "";
+        const filtered = allTags.filter(t => t.main === currentMain && t.sub === subCat);
+
+        filtered.forEach(tag => {
+            if(tag.isDummy) return;
+
+            const card = document.createElement('div');
+            card.className = 'tag-card';
+            
+            const blurIcon = tag.isBlurred ? '☁️' : '✨';
+            const blurClass = tag.isBlurred ? 'blur-img' : '';
+
+            card.innerHTML = `
+                <div class="blur-toggle" title="이미지 블러 켜기/끄기">${blurIcon}</div>
+                <div class="img-container">
+                    <img src="${tag.img}" class="${blurClass}">
+                </div>
+                <div class="tag-info"><span class="tag-eng">${tag.eng}</span><span class="tag-kor">${tag.kor}</span></div>
+            `;
+            
+            card.querySelector('.blur-toggle').onclick = (e) => {
+                e.stopPropagation();
+                tag.isBlurred = !tag.isBlurred;
+                saveToLocalStorage();
+                
+                const img = card.querySelector('img');
+                const toggle = card.querySelector('.blur-toggle');
+                
+                if (tag.isBlurred) {
+                    img.classList.add('blur-img');
+                    toggle.innerText = '☁️';
+                } else {
+                    img.classList.remove('blur-img');
+                    toggle.innerText = '✨';
+                }
+            };
+
+            card.onclick = () => {
+                if (isEditMode) { openModal(tag.id); } 
+                else { 
+                    if (!selectedTags.includes(tag.eng)) selectedTags.push(tag.eng); 
+                    renderBasket(); 
+                }
+            };
+
+            card.draggable = isEditMode;
+            card.ondragstart = (e) => {
+                if(!isEditMode) return;
+                draggedItem = tag.id; dragType = 'tag';
+                e.dataTransfer.effectAllowed = 'move';
+                card.style.opacity = '0.5';
+            };
+            card.ondragend = () => { card.style.opacity = '1'; draggedItem = null; dragType = null; };
+            card.ondragover = (e) => {
+                if(!isEditMode || dragType !== 'tag') return;
+                e.preventDefault(); card.classList.add('drag-over');
+            };
+            card.ondragleave = () => { card.classList.remove('drag-over'); };
+            card.ondrop = (e) => {
+                e.preventDefault(); card.classList.remove('drag-over');
+                if(!isEditMode || dragType !== 'tag' || draggedItem === tag.id) return;
+                reorderTags(draggedItem, tag.id);
+            };
+
+            contentDiv.appendChild(card);
+        });
+
+        appendAddCard();
+    }
+
+    function appendAddCard() {
+        const addTagCard = document.createElement('div');
+        addTagCard.className = 'tag-card add-card';
+        addTagCard.innerHTML = `<div style="font-size: 3em; margin-bottom: 8px; font-weight: 300;">+</div><div style="font-size: 14px; font-weight: bold;">새 태그 추가</div>`;
+        addTagCard.onclick = () => openModal();
+        contentDiv.appendChild(addTagCard);
+    }
+
+    // === 백업 및 불러오기 로직 ===
+    function openExportModal() {
+        const mains = [...new Set(allTags.map(t => t.main))];
+        const listDiv = document.getElementById('export-list');
+        listDiv.innerHTML = "";
+        mains.forEach(main => { listDiv.innerHTML += `<label style="display:flex; align-items:center; margin-bottom:10px; cursor:pointer;"><input type="checkbox" value="${main}" checked class="export-checkbox"> ${main}</label>`; });
+        document.getElementById('export-modal').style.display = 'flex';
+    }
+    function closeExportModal() { document.getElementById('export-modal').style.display = 'none'; }
+    function executeExport() {
+        const checkboxes = document.querySelectorAll('.export-checkbox');
+        const selectedMains = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        if (selectedMains.length === 0) return alert("내보낼 카테고리를 하나 이상 선택해주세요.");
+        
+        const dataToExport = allTags.filter(t => selectedMains.includes(t.main));
+        const dataStr = JSON.stringify(dataToExport);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = "my_danbooru_tags.json";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        closeExportModal();
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedTags = JSON.parse(e.target.result);
+                if(Array.isArray(importedTags) && importedTags.length > 0 && importedTags[0].eng !== undefined) {
+                    tempImportedTags = importedTags;
+                    document.getElementById('import-modal').style.display = 'flex';
+                } else { alert("잘못된 형식의 파일입니다."); }
+            } catch(err) { alert("파일을 읽는 중 오류가 발생했습니다."); }
+            event.target.value = ""; 
+        };
+        reader.readAsText(file);
+    }
+    function closeImportModal() { document.getElementById('import-modal').style.display = 'none'; tempImportedTags = []; }
+    function executeImport(mode) {
+        if (mode === 'overwrite') { allTags = tempImportedTags; } 
+        else if (mode === 'append') {
+            tempImportedTags.forEach(tag => { tag.id = Date.now().toString() + Math.random().toString(36).substr(2, 5); });
+            allTags = [...allTags, ...tempImportedTags];
+        }
+        saveToLocalStorage(); renderMainNav(); renderBasket(); closeImportModal(); alert("불러오기 완료!");
+    }
+
+    // === 폼 로직 ===
+    function toggleEditMode() {
+        isEditMode = !isEditMode;
+        const btn = document.getElementById('edit-toggle-btn');
+        if (isEditMode) { document.body.classList.add('edit-mode'); btn.innerText = "✏️ 편집 모드: ON"; } 
+        else { document.body.classList.remove('edit-mode'); btn.innerText = "✏️ 편집 모드: OFF"; }
+        document.querySelectorAll('.main-btn:not(.add-btn), .sub-btn:not(.add-btn), .tag-card:not(.add-card)').forEach(b => { b.draggable = isEditMode; });
+    }
+
+    function openModal(tagId = null) {
+        editingTagId = tagId;
+        const modalTitle = document.getElementById('modal-title');
+        const deleteBtn = document.getElementById('delete-btn');
+        document.getElementById('modal-overlay').style.display = 'flex';
+
+        if (tagId) {
+            modalTitle.innerText = "태그 수정하기"; deleteBtn.style.display = "block";
+            const tag = allTags.find(t => t.id === tagId);
+            document.getElementById('new-eng').value = tag.eng; document.getElementById('new-kor').value = tag.kor;
+            document.getElementById('new-main').value = tag.main; document.getElementById('new-sub').value = tag.sub;
+            
+            document.getElementById('main-select').value = ""; 
+            document.getElementById('sub-select').value = "";
+            
+            compressedImageBase64 = tag.img;
+            const preview = document.getElementById('img-preview');
+            preview.src = compressedImageBase64; preview.style.display = 'block';
+        } else {
+            modalTitle.innerText = "새 태그 만들기"; deleteBtn.style.display = "none";
+            document.getElementById('new-eng').value = ""; document.getElementById('new-kor').value = "";
+            document.getElementById('new-main').value = currentMain || ""; document.getElementById('new-sub').value = currentSub || "";
+            
+            document.getElementById('main-select').value = ""; 
+            document.getElementById('sub-select').value = "";
+            
+            document.getElementById('new-img').value = ""; document.getElementById('img-preview').style.display = "none";
+            compressedImageBase64 = "";
+        }
+    }
+    function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; editingTagId = null; }
+
+    function updateDatalists(mains) {
+        const mainSelect = document.getElementById('main-select');
+        const subSelect = document.getElementById('sub-select');
+        
+        mainSelect.innerHTML = '<option value="" disabled selected>선택 ▼</option>';
+        subSelect.innerHTML = '<option value="" disabled selected>선택 ▼</option>';
+        
+        mains.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m; opt.innerText = m;
+            mainSelect.appendChild(opt);
+        });
+        
+        [...new Set(allTags.map(t => t.sub))].forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s; opt.innerText = s;
+            subSelect.appendChild(opt);
+        });
+    }
+
+    function previewImage(event) {
+        const file = event.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+                const MAX_SIZE = 600; let width = img.width, height = img.height;
+                if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } } 
+                else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
+                canvas.width = width; canvas.height = height; ctx.drawImage(img, 0, 0, width, height);
+                compressedImageBase64 = canvas.toDataURL('image/jpeg', 0.85);
+                const preview = document.getElementById('img-preview');
+                preview.src = compressedImageBase64; preview.style.display = 'block';
+            }
+            img.src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+    }
+
+    function saveTag() {
+        const eng = document.getElementById('new-eng').value.trim(); const kor = document.getElementById('new-kor').value.trim();
+        const main = document.getElementById('new-main').value.trim() || "기타"; const sub = document.getElementById('new-sub').value.trim() || "기타";
+        const img = compressedImageBase64 || "https://via.placeholder.com/600?text=No+Image";
+
+        if(!eng) return alert("영어 태그를 입력해주세요!");
+
+        if (editingTagId) {
+            const tagIndex = allTags.findIndex(t => t.id === editingTagId);
+            const isBlurred = allTags[tagIndex].isBlurred || false;
+            allTags[tagIndex] = { id: editingTagId, main, sub, eng, kor, img, isBlurred };
+        } else {
+            const newTag = { id: Date.now().toString(), main, sub, eng, kor, img, isBlurred: false };
+            
+            let insertIdx = -1;
+            for (let i = allTags.length - 1; i >= 0; i--) {
+                if (allTags[i].main === main && allTags[i].sub === sub) { insertIdx = i + 1; break; }
+            }
+            if (insertIdx === -1) {
+                for (let i = allTags.length - 1; i >= 0; i--) {
+                    if (allTags[i].main === main) { insertIdx = i + 1; break; }
+                }
+            }
+            
+            if (insertIdx !== -1) { allTags.splice(insertIdx, 0, newTag); } 
+            else { allTags.push(newTag); }
+        }
+        
+        allTags = allTags.filter(t => !(t.isDummy && t.main === main && t.sub === sub));
+
+        const hasRealTag = allTags.some(t => t.main === main && !t.isDummy);
+        if (hasRealTag) {
+            allTags = allTags.filter(t => !(t.isDummy && t.main === main && t.sub === "기타"));
+        }
+
+        currentMain = main;
+        currentSub = sub;
+
+        saveToLocalStorage(); closeModal(); renderMainNav(); renderBasket();
+    }
+
+    function deleteTag() {
+        if(!confirm("이 태그를 정말 삭제하시겠습니까?")) return;
+        allTags = allTags.filter(t => t.id !== editingTagId);
+        selectedTags = selectedTags.filter(t => t !== allTags.find(t => t.id === editingTagId)?.eng);
+        saveToLocalStorage(); closeModal(); renderMainNav(); renderBasket();
+    }
+
+    function saveToLocalStorage() {
+        try { localStorage.setItem('myCompleteTags', JSON.stringify(allTags)); } 
+        catch(e) { alert("저장 용량 초과!"); }
+    }
+
+    function copyTags() {
+        if(selectedTags.length === 0) return alert("선택된 태그가 없습니다!");
+        navigator.clipboard.writeText(selectedTags.join(", "));
+        alert("복사 완료!");
+    }
+    function resetTags() { selectedTags = []; renderBasket(); }
+
+    init();
+</script>
+</body>
+</html>
